@@ -78,30 +78,31 @@ const resolvers = {
       }
       throw new AuthenticationError('You need to be logged in!');
     },
-    addProject: async (parent, { projectText, projectName }, context) => {
+    addPost: async (parent, { description, image, likes, }, context) => {
       if (context.user) {
-        const project = await Project.create({
-          projectText,
-          projectName,
-          projectAuthor: context.user.username,
+        const posts = await Post.create({
+          description,
+          image,
+          user: context.user.username,
+          likes,
         });
 
         await User.findOneAndUpdate(
           { _id: context.user._id },
-          { $addToSet: { projects: project._id } }
+          { $addToSet: { post: post._id } }
         );
 
-        return project;
+        return posts;
       }
       throw new AuthenticationError('You need to be logged in!');
     },
-    addTikkit: async (parent, { projectId, tikkitText }, context) => {
+    addComment: async (parent, { postId, user, comment }, context) => {
       if (context.user) {
-        return Project.findOneAndUpdate(
-          { _id: projectId },
+        return Post.findOneAndUpdate(
+          { _id: postId },
           {
             $addToSet: {
-              tikkits: { tikkitText, tikkitAuthor: context.user.username },
+              comments: { comment, user: context.user.username },
             },
           },
           {

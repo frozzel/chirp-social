@@ -63,7 +63,9 @@ type Mutation {
   login(email: String!, password: String!): Auth
   followuser(username: String!): User
   unfollowuser(username: String!): User
-  addProject(projectText: String!, projectName: String): Project
+  addPost(description: String!, image: String!, likes!: string): Post
+  addComment(postId: ID!, comment: String!): Post
+  
   addTikkit(projectId: ID!, tikkitText: String! ): Project
   updateProject(projectId: ID!): Project
   updateTikkit(projectId: ID!, tikkitText: String! ): Project
