@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
     following : [{type : mongoose.Schema.Types.ObjectId, req : 'users'}] ,
     profilePicUrl : {type : String, required:false , default: ''},
     bio : {type : String, required:false , default:''},
+    posts: [{type : mongoose.Schema.Types.ObjectId, req : 'posts'}] ,
     savedPosts : [],
     archeivedPosts : []
 
