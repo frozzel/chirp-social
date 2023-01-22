@@ -3,10 +3,10 @@ const mongoose = require("mongoose");
 const postSchema = new mongoose.Schema(
   { 
     description: { type: String, default: "" },
-    image: { type: String, required: true },
+    image: { type: String, required: false },
     comments: [
       {
-        user: { type: mongoose.Schema.Types.ObjectID, ref: "users" },
+        user: { type: mongoose.Schema.Types.ObjectID, ref: "User" },
         date: { type: String, required: true },
         comment: { type: String, required: true },
       },
@@ -14,16 +14,16 @@ const postSchema = new mongoose.Schema(
 
     likes: [
       {
-        user: { type: mongoose.Schema.Types.ObjectID, ref: "users" },
+        user: { type: mongoose.Schema.Types.ObjectID, ref: "User" },
         date: { type: String, required: true },
       },
     ],
 
-    user: { type: mongoose.Schema.Types.ObjectID, ref: "users" },
+    user: { type: mongoose.Schema.Types.ObjectID, ref: "User" },
   },
   {
     timestamps: true,
   }
 );
 
-module.exports = mongoose.model("posts", postSchema);
+module.exports = mongoose.model("Post", postSchema);

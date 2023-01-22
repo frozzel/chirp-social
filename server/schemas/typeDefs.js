@@ -1,54 +1,75 @@
 const { gql } = require('apollo-server-express');
 
 const typeDefs = gql`
-  type Category {
-    _id: ID
-    name: String
-  }
-  type Product {
-    _id: ID
-    name: String
-    description: String
-    image: String
-    quantity: Int
-    price: Float
-    category: Category
-  }
-  type Order {
-    _id: ID
-    purchaseDate: String
-    products: [Product]
-  }
-  type User {
-    _id: ID
-    firstName: String
-    lastName: String
-    email: String
-    orders: [Order]
-  }
-  type Checkout {
-    session: ID
-  }
-  type Auth {
-    token: ID
-    user: User
-  }
-  type Query {
-    categories: [Category]
-    products(category: ID, name: String): [Product]
-    product(_id: ID!): Product
-    user: User
-    order(_id: ID!): Order
-    checkout(products: [ID]!): Checkout
-  }
-  type Mutation {
-    addUser(firstName: String!, lastName: String!, email: String!, password: String!): Auth
-    addOrder(products: [ID]!): Order
-    updateUser(firstName: String, lastName: String, email: String, password: String): User
-    updateProduct(_id: ID!, quantity: Int!): Product
-    increaseProduct(_id: ID!, quantity: Int!): Product
-    login(email: String!, password: String!): Auth
-  }
+type User {
+  _id: ID
+  username: String
+  email: String
+  password: String
+  profilePicUrl: String
+  posts: [Post]!
+  followers: [User]!
+  following : [User]!
+  bio: String
+  savedPosts: [User]
+  archeivedPosts: [User]
+  createdAt: String
+}
+
+type Post {
+  _id: ID
+  description: String
+  image: String
+  comments: [Comment]!
+  likes: [User]!
+  user: User
+  createdAt: String
+  
+}
+
+type followers {
+  User: User
+}
+
+type following {
+  User: User
+}
+
+type Comment {
+  user: User
+  date: String
+  comment: String
+}
+
+type likes {
+  user: User
+  date: String
+}
+
+type Auth {
+  token: ID!
+  user: User
+}
+
+type Query {
+  users: [User]
+  user(username: String!): User
+  posts(username: String): [Post]
+  post(postId: ID!): Post
+}
+
+type Mutation {
+  addUser(username: String!, email: String!, password: String!): Auth
+  login(email: String!, password: String!): Auth
+  followuser(username: String!): User
+  unfollowuser(username: String!): User
+  addProject(projectText: String!, projectName: String): Project
+  addTikkit(projectId: ID!, tikkitText: String! ): Project
+  updateProject(projectId: ID!): Project
+  updateTikkit(projectId: ID!, tikkitText: String! ): Project
+  removeProject(projectId: ID!): Project
+  removeTikkit(projectId: ID!, tikkitId: ID! ): Project
+}
 `;
 
 module.exports = typeDefs;
