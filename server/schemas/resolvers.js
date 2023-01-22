@@ -1,135 +1,36 @@
 const { AuthenticationError } = require('apollo-server-express');
-const { User, Product, Category, Order } = require('../models');
+const { User, Post } = require('../models');
 const { signToken } = require('../utils/auth');
 
 
 const resolvers = {
   Query: {
-    categories: async () => {
-      return await Category.find();
+    users: async () => {
+      return User.find().populate('posts', 'followers', 'following');
     },
-    products: async (parent, { category, name }) => {
-      const params = {};
-
-      if (category) {
-        params.category = category;
-      }
-
-      if (name) {
-        params.name = {
-          $regex: name
-        };
-      }
-
-      return await Product.find(params).populate('category');
+    user: async (parent, { username }) => {
+      return User.findOne({ username }).populate('posts', 'followers', 'following');
     },
-    product: async (parent, { _id }) => {
-      return await Product.findById(_id).populate('category');
+    posts: async (parent, { username }) => {
+      const params = username ? { username } : {};
+      return Post.find(params).sort({ createdAt: -1 });
     },
-    user: async (parent, args, context) => {
-      if (context.user) {
-        const user = await User.findById(context.user._id).populate({
-          path: 'orders.products',
-          populate: 'category'
-        });
-
-        user.orders.sort((a, b) => b.purchaseDate - a.purchaseDate);
-
-        return user;
-      }
-
-      throw new AuthenticationError('Not logged in');
+    post: async (parent, { postId }) => {
+      return Post.findOne({ _id: postId });
     },
-    order: async (parent, { _id }, context) => {
-      if (context.user) {
-        const user = await User.findById(context.user._id).populate({
-          path: 'orders.products',
-          populate: 'category'
-        });
-
-        return user.orders.id(_id);
-      }
-
-      throw new AuthenticationError('Not logged in');
-    },
-    checkout: async (parent, args, context) => {
-      const url = new URL(context.headers.referer).origin;
-      const order = new Order({ products: args.products });
-      const line_items = [];
-
-      const { products } = await order.populate('products');
-
-      for (let i = 0; i < products.length; i++) {
-        const product = await stripe.products.create({
-          name: products[i].name,
-          description: products[i].description,
-          images: [`${url}/images/${products[i].image}`]
-        });
-
-        const price = await stripe.prices.create({
-          product: product.id,
-          unit_amount: products[i].price * 100,
-          currency: 'usd',
-        });
-
-        line_items.push({
-          price: price.id,
-          quantity: 1
-        });
-      }
-
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items,
-        mode: 'payment',
-        success_url: `${url}/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${url}/`
-      });
-
-      return { session: session.id };
-    }
   },
+
   Mutation: {
-    addUser: async (parent, args) => {
-      const user = await User.create(args);
+    addUser: async (parent, { username, email, password }) => {
+      const user = await User.create({ username, email, password });
       const token = signToken(user);
-
       return { token, user };
-    },
-    addOrder: async (parent, { products }, context) => {
-      console.log(context);
-      if (context.user) {
-        const order = new Order({ products });
-
-        await User.findByIdAndUpdate(context.user._id, { $push: { orders: order } });
-
-        return order;
-      }
-
-      throw new AuthenticationError('Not logged in');
-    },
-    updateUser: async (parent, args, context) => {
-      if (context.user) {
-        return await User.findByIdAndUpdate(context.user._id, args, { new: true });
-      }
-
-      throw new AuthenticationError('Not logged in');
-    },
-    updateProduct: async (parent, { _id, quantity }) => {
-      const decrement = Math.abs(quantity) * -1;
-     
-      return await Product.findByIdAndUpdate(_id, { $inc: { quantity: decrement } }, { new: true });
-    },
-    increaseProduct:   async (parent, { _id, quantity }) => {
-     
-      const increment = Math.abs(quantity) * 1;
-      return await Product.findByIdAndUpdate(_id, { $inc: { quantity: increment } }, { new: true });
     },
     login: async (parent, { email, password }) => {
       const user = await User.findOne({ email });
 
       if (!user) {
-        throw new AuthenticationError('Incorrect credentials');
+        throw new AuthenticationError('No user found with this email address');
       }
 
       const correctPw = await user.isCorrectPassword(password);
@@ -141,8 +42,144 @@ const resolvers = {
       const token = signToken(user);
 
       return { token, user };
-    }
-  }
+    },
+    followuser: async (parent, { username }, context) => {
+      if (context.user) {
+        const {currentuserid , receiveruserid} = req.body
+        console.log(req.body)
+        let currentuser = await User.findOne({_id : currentuserid})
+        let currentUserFollowing = currentuser.following
+        currentUserFollowing.updateOne(receiveruserid)
+        currentuser.following = currentUserFollowing
+        await User.updateOne({_id : currentuserid} , currentuser)
+        let receiveruser = await User.findOne({_id : receiveruserid})
+        let receiverUserFollowers   = receiveruser.followers
+        receiverUserFollowers.updateOne(currentuserid)
+        receiveruser.followers = receiverUserFollowers
+        await User.updateOne({_id : receiveruserid} , receiveruser)
+      }
+      throw new AuthenticationError('You need to be logged in!');
+      
+    },
+    unfollowuser: async (parent, { username }, context) => {
+      if (context.user) {
+        const {currentuserid , receiveruserid} = req.body
+        console.log(req.body)
+        let currentuser = await User.findOne({_id : currentuserid})
+        let currentUserFollowing = currentuser.following
+        const temp1 = currentUserFollowing.filter(obj=>obj.toString() !== receiveruserid)
+        currentuser.following = temp1
+        await User.updateOne({_id : currentuserid} , currentuser)
+        let receiveruser = await User.findOne({_id : receiveruserid})
+        let receiverUserFollowers   = receiveruser.followers
+        const temp2 = receiverUserFollowers.filter(obj=>obj.toString()!==currentuserid)
+        receiveruser.followers = temp2
+        await User.updateOne({_id : receiveruserid} , receiveruser)
+      }
+      throw new AuthenticationError('You need to be logged in!');
+    },
+    addProject: async (parent, { projectText, projectName }, context) => {
+      if (context.user) {
+        const project = await Project.create({
+          projectText,
+          projectName,
+          projectAuthor: context.user.username,
+        });
+
+        await User.findOneAndUpdate(
+          { _id: context.user._id },
+          { $addToSet: { projects: project._id } }
+        );
+
+        return project;
+      }
+      throw new AuthenticationError('You need to be logged in!');
+    },
+    addTikkit: async (parent, { projectId, tikkitText }, context) => {
+      if (context.user) {
+        return Project.findOneAndUpdate(
+          { _id: projectId },
+          {
+            $addToSet: {
+              tikkits: { tikkitText, tikkitAuthor: context.user.username },
+            },
+          },
+          {
+            new: true,
+            runValidators: true,
+          }
+        );
+      }
+      throw new AuthenticationError('You need to be logged in!');
+    },
+    updateProject: async (parent, { projectId }, context) => {
+      if (context.user) {
+        const project = await Project.findOneAndUpdate({
+          _id: projectId,
+          projectAuthor: context.user.username,
+        });
+
+        await User.findOneAndUpdate(
+          { _id: context.user._id },
+          { $push: { projects: project._id } }
+        );
+
+        return project;
+      }
+      throw new AuthenticationError('You need to be logged in!');
+    },
+    removeProject: async (parent, { projectId }, context) => {
+      if (context.user) {
+        const project = await Project.findOneAndDelete({
+          _id: projectId,
+          projectAuthor: context.user.username,
+        });
+
+        await User.findOneAndUpdate(
+          { _id: context.user._id },
+          { $pull: { projects: project._id } }
+        );
+
+        return project;
+      }
+      throw new AuthenticationError('You need to be logged in!');
+    },
+    updateTikkit: async (parent, { projectId }, context) => {
+      if (context.user) {
+        const project = await Project.findOneAndUpdate({
+          _id: projectId,
+          projectAuthor: context.user.username,
+          dueDate, 
+        });
+
+        await User.findOneAndUpdate(
+          { _id: context.user._id },
+          { $push: { projects: project._id } }
+        );
+
+        return project;
+      }
+      throw new AuthenticationError('You need to be logged in!');
+    },
+    removeTikkit: async (parent, { projectId, tikkitId }, context) => {
+      if (context.user) {
+        return Project.findOneAndDelete(
+          { _id: projectId },
+          {
+            $pull: {
+              tikkits: {
+                _id: tikkitId,
+                tikkitAuthor: context.user.username,
+              },
+            },
+          },
+          { new: true }
+        );
+      }
+      throw new AuthenticationError('You need to be logged in!');
+    },
+
+  },
 };
 
 module.exports = resolvers;

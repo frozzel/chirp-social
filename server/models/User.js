@@ -5,8 +5,7 @@ const userSchema = new mongoose.Schema({
 
     username : {type : String, required: true} , 
     password : {type : String, required: true} , 
-    privateAccount : {type : Boolean, required: false , default: false} ,
-
+    email: {type: String, required: true,unique: true, match: [/.+@.+\..+/, 'Must match an email address!'],},
     followers : [{type : mongoose.Schema.Types.ObjectId, req : 'users'}] ,
     following : [{type : mongoose.Schema.Types.ObjectId, req : 'users'}] ,
     profilePicUrl : {type : String, required:false , default: ''},
@@ -35,6 +34,6 @@ userSchema.pre('save', async function(next) {
     return await bcrypt.compare(password, this.password);
   };
   
-  const users = mongoose.model('users', userSchema);
+  const User = mongoose.model('User', userSchema);
 
-module.exports = users;
+module.exports = User;
