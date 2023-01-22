@@ -27,13 +27,6 @@ type Post {
   
 }
 
-type followers {
-  User: User
-}
-
-type following {
-  User: User
-}
 
 type Comment {
   user: User
@@ -58,20 +51,22 @@ type Query {
   post(postId: ID!): Post
 }
 
-type Mutation {
-  addUser(username: String!, email: String!, password: String!): Auth
-  login(email: String!, password: String!): Auth
-  followuser(username: String!): User
-  unfollowuser(username: String!): User
-  addPost(description: String!, image: String!, likes!: string): Post
-  addComment(postId: ID!, comment: String!): Post
-  
-  addTikkit(projectId: ID!, tikkitText: String! ): Project
-  updateProject(projectId: ID!): Project
-  updateTikkit(projectId: ID!, tikkitText: String! ): Project
-  removeProject(projectId: ID!): Project
-  removeTikkit(projectId: ID!, tikkitId: ID! ): Project
-}
+
 `;
 
 module.exports = typeDefs;
+
+// type Mutation {
+//   addUser(username: String!, email: String!, password: String!): Auth
+//   login(email: String!, password: String!): Auth
+//   followuser(username: String!): User
+//   unfollowuser(username: String!): User
+//   addPost(description: String!, image: String!, likes!: string): Post
+//   addComment(postId: ID!, comment: String!): Post
+//   updateProfile(username: String!, bio: String!, profilePicUrl: String!): User
+//   updatePost(postId: ID!, description: String!, image: String!): Post
+//   updateComment(postId: ID!, commentId: ID!, comment: String!): Post
+//   removePost(postId: ID!): Post
+//   removeComment(postId: ID!, commentId: ID!): Post
+  
+// }
